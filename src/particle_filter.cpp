@@ -30,8 +30,24 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
    * NOTE: Consult particle_filter.h for more information about this method 
    *   (and others in this file).
    */
-  num_particles = 0;  // TODO: Set the number of particles
-
+  num_particles = 100;  // TODO: Set the number of particles
+  /// prepare to generate x,y, and theta values normally distributed around the initial GPS inputs.
+  std::default_random_engine gen;
+  ///std::cout << "std[]= " << std[0] << " " << std[1] << " " << std[2] << " " << x << " " << y <<std::endl;
+  std::normal_distribution<double> dist_x(x, std[0]);
+  std::normal_distribution<double> dist_y(y, std[1]);
+  std::normal_distribution<double> dist_theta(theta, std[2]);
+  for ( int i=0; i < num_particles; ++i){
+	Particle initial_particle;
+	initial_particle.id = i+1;
+	initial_particle.x = dist_x(gen);
+	initial_particle.y = dist_y(gen);
+	initial_particle.theta = dist_theta(gen);
+	initial_particle.weight = 1.0;
+	particles.push_back(initial_particle);
+	std::cout << "initial_particle " << initial_particle.x << " " << initial_particle.y << std::endl;/////for debug
+}
+is_initialized = true;
 }
 
 void ParticleFilter::prediction(double delta_t, double std_pos[], 
@@ -44,6 +60,17 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
    *  http://www.cplusplus.com/reference/random/default_random_engine/
    */
 
+   std::default_random_engine gen;
+   for ( int i=0; i < num_particles; ++i){
+      std::normal_distribution<double> delta_x((cos(particles[i].theta) * velocity * delta_t) , std_pos[0]);
+      particles[i].x += delta_x(gen);
+      std::normal_distribution<double> delta_y((sin(particles[i].theta) * velocity * delta_t) , std_pos[1]);
+      particles[i].y += delta_y(gen);
+      std::normal_distribution<double> delta_theta((yaw_rate * delta_t), std_pos[2]);
+      particles[i].y += delta_theta(gen);
+      std::cout << "prediction " << i << " " << particles[i].x << " " << particles[i].y << " " << particles[i].theta << std::endl;
+}
+   
 }
 
 void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted, 
