@@ -45,7 +45,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	initial_particle.theta = dist_theta(gen);
 	initial_particle.weight = 1.0;
 	particles.push_back(initial_particle);
-	std::cout << "initial_particle " << initial_particle.x << " " << initial_particle.y << std::endl;/////for debug
+	///std::cout << "initial_particle " << initial_particle.x << " " << initial_particle.y << std::endl;/////for debug
 }
 is_initialized = true;
 }
@@ -68,14 +68,16 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
       particles[i].y += delta_y(gen);
       std::normal_distribution<double> delta_theta((yaw_rate * delta_t), std_pos[2]);
       particles[i].y += delta_theta(gen);
-      std::cout << "prediction " << i << " " << particles[i].x << " " << particles[i].y << " " << particles[i].theta << std::endl;
+      ///std::cout << "prediction " << i << " " << particles[i].x << " " << particles[i].y << " " << particles[i].theta << std::endl;
 }
    
 }
 
 void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted, 
-                                     vector<LandmarkObs>& observations) {
-  /**
+                                    vector<LandmarkObs>& observations) { 
+///void ParticleFilter::dataAssociation(vector<LandmarkObs> &map_transformed_particle_observations, Map map_landmarks){
+///need to update particle_filter.h////////
+   /**
    * TODO: Find the predicted measurement that is closest to each 
    *   observed measurement and assign the observed measurement to this 
    *   particular landmark.
@@ -84,7 +86,25 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
    *   during the updateWeights phase.
    */
 
+   /*
+   for (int l; l<map_transformed_particle_observations.size(), ++l){
+       double distance = 999999.9;
+       int landmark_index;
+       for (int m; m<map_landmarks.size(), ++m){
+//	   double temp_distance = sqrt( pow((map_transformed_particle_observations[l].x - map_landmarks[m].x), 2.0) + pow((map_transformed_particle_observations[l].y - map_landmarks[m]), 2.0));
+           double temp_distance = dist(map_transformed_particle_observations[l].x, map_transformed_particle_observations[l].y, map_landmarks[m].x, map_landmarks[m].y);
+	   if temp_distance < distance {
+		distance = temp_distance;
+		landmark_index = m;
+	   }
+       particle_observation_prob = 
+	   
+	   map_transformed_particle_observations[l].id = 
+       }
+   }*/
 }
+
+
 
 void ParticleFilter::updateWeights(double sensor_range, double std_landmark[], 
                                    const vector<LandmarkObs> &observations, 
@@ -102,6 +122,66 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
    *   and the following is a good resource for the actual equation to implement
    *   (look at equation 3.33) http://planning.cs.uiuc.edu/node99.html
    */
+   ///std::cout << "sensor_range " << sensor_range << " " << "std_landmark[] " << std_landmark[0] << " " << std_landmark[1] << " " << std_landmark[2] << std::endl;
+   
+   /// Here's what I need to do: 
+   /// For each particle, create a vector of the observations from its point of view based on the particle's position/heading.
+   /// Then for each particle, call the dataAssociation() function to compare the predicted particle's observations to the car's observations and associate the car's observations with the particles' closest observation.
+   /// Then update the weight of the particle
+   /// Then move on to the next particle   
+
+
+    
+   /// Take the landmark observations from the vehicle's point of view in the vehicle coordinate system 
+   /// and apply them to each particle's position/heading
+   /// and transform them into the map's point of view in the map coordinate system
+
+
+   double gauss_norm = 1/(2*M_PI*std_landmark[0]*std_landmark[1]);///normalization term for probability calculation
+   for (int i=0; i<particles.size(); ++i){
+	///vector<LandmarkObs> map_transformed_particle_observations;
+   	///map_transformed_particle_observations.clear();
+	particles[i].associations.clear();
+	particles[i].sense_x.clear();
+	particles[i].sense_y.clear();
+	///map the car's observations onto the particle's coordinates/heading and transform to map coordinates///
+	for (int j=0; j<observations.size(); ++j){ 
+		LandmarkObs particle_observations;
+		particle_observations.x = particles[i].x + (cos(particles[i].theta) * observations[j].x) - (sin(particles[i].theta) * observations[j].y);
+		particle_observations.y = particles[i].y + (sin(particles[i].theta) * observations[j].x) - (cos(particles[i].theta) * observations[j].y);
+		///map_transformed_particle_observations.push_back(particle_observations);
+		particles[i].sense_x.push_back(particle_observations.x);
+		particles[i].sense_y.push_back(particle_observations.y);
+   	}
+	/// for each particle observation, find the closest map landmark (or if none, use the first landmark) and calculate the probability 
+	///for (int l; l<map_transformed_particle_observations.size(), ++l){
+	double particle_weight = 0;
+	for (int l; l<particles[i].sense_x.size(); ++l){
+		double distance = sensor_range;
+       		int landmark_index = 0;
+		double particle_observation_weight = 0;
+       		for (int m; m<map_landmarks.landmark_list.size(); ++m){
+//	        	double temp_distance = sqrt( pow((map_transformed_particle_observations[l].x - map_landmarks.landmark_list[m].x_f), 2.0) + 					       pow((map_transformed_particle_observations[l].y - map_landmarks.landmark_list[m].y_f), 2.0));
+           		double temp_distance = dist(particles[i].sense_x[l], particles[i].sense_y[l],
+						map_landmarks.landmark_list[m].x_f, map_landmarks.landmark_list[m].y_f);
+	   		if (temp_distance < distance) {
+				distance = temp_distance;
+				landmark_index = m;
+	  		}
+		particles[i].associations.push_back(landmark_index);
+
+		/// maybe put this in another for loop, maybe not ///
+       		//double exponent = (pow((map_transformed_particle_observations[l].x-map_landmarks[landmark_index].x),2.0)/(2.0*pow(std_landmark[0], 2.0)))
+		//		+ (pow((map_transformed_particle_observations[l].y-map_landmarks[landmark_index].y),2.0)/(2.0*pow(std_landmark[1], 2.0)));
+		double exponent = (pow((particles[i].sense_x[l]-map_landmarks.landmark_list[(particles[i].associations[l])].x_f),2.0)/(2.0*pow(std_landmark[0], 2.0)))
+				+ (pow((particles[i].sense_y[l]-map_landmarks.landmark_list[(particles[i].associations[l])].y_f),2.0)/(2.0*pow(std_landmark[1], 2.0)));
+		particle_observation_weight = gauss_norm * exp(-exponent);
+		particle_weight += particle_observation_weight;
+   		}	
+	}
+	/// save the particle's weight to the particle array ///
+	particles[i].weight = particle_weight; 
+   }     
 
 }
 
