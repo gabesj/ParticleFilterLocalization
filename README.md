@@ -8,7 +8,7 @@ The particle filter starts by initializing a specified number of particles distr
 
 When running the simulator, you will see a vehicle surrounded by plotted map landmarks.  You will also see a purple circle with an arrow inside which represents the particle with the highest weight.  The green lines that come from the vehicle represent the sensor measurements.  The blue lines that come from the particle represent the particle's estimation of the landmarks based on its location and heading.  The red lines (very short) that connect the end of each green line to the end of each corresponding blue line represent the error between the two.  As the simulator runs and the vehicle moves, you will see that the landmarks come in and out of the senor range, and you will see that the most likely particle's purple circle and the true vehicle location correlate very closely.
 
-[![ParticleFilterSimulation](video/KidnappedVehicleProjectSimulatio.gif =250x)](https://youtu.be/8LK1TXaFEWI)
+[![ParticleFilterSimulation](video/KidnappedVehicleProjectSimulatio.gif)](https://youtu.be/8LK1TXaFEWI)
 
 
 ## Running the Code
