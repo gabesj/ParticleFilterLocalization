@@ -180,7 +180,7 @@ void ParticleFilter::resample() {
 	}
 	
 	/// Replace the old particles with the new resampled particles
-	particles = resampled_particles;
+	particles = std::move(resampled_particles);
 
 	
 		
